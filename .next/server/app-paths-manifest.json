@@ -1,0 +1,8 @@
+{
+  "/calendario/page": "app/calendario/page.js",
+  "/page": "app/page.js",
+  "/contratos/page": "app/contratos/page.js",
+  "/entidades/page": "app/entidades/page.js",
+  "/settings/page": "app/settings/page.js",
+  "/pnl/page": "app/pnl/page.js"
+}

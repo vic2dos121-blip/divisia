@@ -1,0 +1,143 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Counterparty {
+  id        String     @id @default(cuid())
+  name      String
+  type      String     // "banco" | "broker"
+  country   String?
+  contact   String?
+  contracts Contract[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+// Tipo de instrumento
+// TARF_EKI       = 2:1 Target Accrual Redemption Forward con Knock In Europeo
+// GEARED_FORWARD = Forward apalancado (1:1 o N:1)
+// ACCUMULATOR    = Leveraged Resurrecting Accumulator
+// FORWARD        = Forward estándar / BBVA-style con 2 strikes
+// OPTION         = Opción simple
+// SWAP           = Swap de divisas
+// OTHER          = Otros
+
+model Contract {
+  id             String  @id @default(cuid())
+  reference      String  @unique          // ej: TRE15EAEF0, B00018664687
+  instrumentType String                   // ver lista arriba
+  instrumentName String                   // nombre display del contrato
+
+  counterpartyId String
+  counterparty   Counterparty @relation(fields: [counterpartyId], references: [id])
+
+  // Par de divisas y dirección
+  currencyPair   String   @default("EUR/USD")
+  buyCurrency    String   @default("EUR")  // divisa que compramos
+  sellCurrency   String   @default("USD")  // divisa que vendemos
+
+  // Fechas
+  tradeDate      DateTime
+  startDate      DateTime
+  endDate        DateTime
+
+  // Estado
+  status         String   @default("active")
+  // active | closed | knocked_out | target_reached | expired
+
+  // Importes base
+  notionalAmount Float                    // importe nocional por fixing
+  gearedAmount   Float?                   // importe apalancado (si aplica)
+  gearRatio      Float?                   // ratio apalancamiento (ej: 2.0)
+  maxNotional    Float?                   // nocional total máximo del contrato
+  maxObligation  Float?                   // obligación total máxima
+
+  // Tipos/strikes
+  strikeRate     Float                    // tipo de cambio principal
+  strike2Rate    Float?                   // segundo strike (BBVA forward)
+
+  // Barreras
+  ekiBarrier        Float?                // European Knock-In (TARF)
+  nonAccumBarrier   Float?                // barrera de no acumulación (Accumulator)
+  gearedAccumBarrier Float?              // barrera de acumulación apalancada (Accumulator)
+
+  // Target / Beneficio máximo
+  maxBenefit     Float?                   // TARF: máximo beneficio (ej: 0.01)
+  targetBenefit  Float?                   // BBVA: nivel objetivo de beneficio (ej: 0.30)
+
+  // Fixings
+  totalFixings   Int
+  fixingFrequency String @default("biweekly") // "weekly" | "biweekly" | "monthly" | "one-shot"
+  fixings        Fixing[]
+
+  // Estado acumulado (se actualiza con cada fixing)
+  accumulatedBenefit  Float @default(0)
+  cumulativeNotional  Float @default(0)
+  fixingsCompleted    Int   @default(0)
+
+  // MtM
+  mtmEntries     MtmEntry[]
+
+  // Documento y notas
+  contractPdfUrl String?
+  notes          String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Fixing {
+  id         String   @id @default(cuid())
+  contractId String
+  contract   Contract @relation(fields: [contractId], references: [id])
+
+  fixingNumber   Int       // número de orden (1, 2, 3...)
+  fixingDate     DateTime
+  deliveryDate   DateTime
+
+  // Términos del fixing (pueden variar por fixing en algunos productos)
+  notionalAmount Float
+  gearedAmount   Float?
+  strikeRate     Float
+
+  // Resultado real (se completa cuando ocurre el fixing)
+  fixingRate     Float?    // tipo de cambio real en la fecha de fixing
+  scenario       String?   // "A" | "B" | "C" | "D" (según contrato)
+  amountExchanged Float?   // importe real intercambiado
+  rateUsed       Float?    // tipo aplicado (strike u otro)
+
+  // P&L
+  pnl            Float?    // positivo = ganancia, negativo = pérdida (en EUR)
+  pnlNotes       String?
+
+  // Estado
+  status         String   @default("pending")
+  // pending | exercised | not_exercised | leveraged | skipped | knocked_out
+
+  settledAt      DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([contractId, fixingNumber])
+  @@index([fixingDate])
+}
+
+model MtmEntry {
+  id         String   @id @default(cuid())
+  contractId String
+  contract   Contract @relation(fields: [contractId], references: [id])
+
+  date       DateTime
+  mtmValue   Float    // positivo = a nuestro favor, negativo = en nuestra contra (EUR)
+  spotRate   Float?   // tipo spot en el momento de la valoración
+  source     String?  // quién proporcionó el MtM (ej: "BBVA", "Hamilton Court")
+  notes      String?
+
+  createdAt DateTime @default(now())
+}
