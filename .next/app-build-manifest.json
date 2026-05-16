@@ -10,31 +10,6 @@
       "static/chunks/main-app.js",
       "static/css/css-src_app_globals_css-node_modules_next_font_google_target_css.css",
       "static/chunks/app/layout.js"
-    ],
-    "/contratos/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/contratos/page.js"
-    ],
-    "/entidades/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/entidades/page.js"
-    ],
-    "/calendario/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/calendario/page.js"
-    ],
-    "/pnl/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/pnl/page.js"
-    ],
-    "/settings/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/settings/page.js"
     ]
   }
 }

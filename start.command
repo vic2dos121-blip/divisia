@@ -3,26 +3,37 @@ cd "$(dirname "$0")"
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "  Divisia — Control de Coberturas FX"
+echo "  Puerto: 3000"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 
-# Copiar .env si no existe
+# Verificar .env
 if [ ! -f .env ]; then
-  echo "→ Creando .env desde .env.example..."
+  echo "⚠️  No existe .env. Copiando .env.example..."
   cp .env.example .env
+  echo "   Edita .env con tus credenciales de Neon antes de continuar."
+  exit 1
 fi
 
-# Crear base de datos y tablas
-echo "→ Inicializando base de datos..."
+# Comprobar que las credenciales de Neon están configuradas
+if grep -q "CAMBIA_ESTO" .env; then
+  echo "⚠️  El .env contiene credenciales sin configurar (CAMBIA_ESTO)."
+  echo "   Ve a https://neon.tech, crea el proyecto 'divisia' y pega las URLs."
+  exit 1
+fi
+
+# Instalar dependencias si faltan
+if [ ! -d node_modules ]; then
+  echo "→ Instalando dependencias..."
+  npm install
+fi
+
+# Sincronizar schema con la base de datos
+echo "→ Sincronizando schema con Neon..."
 npx prisma db push --skip-generate 2>&1 | tail -5
 
-# Importar contratos de ejemplo
-echo "→ Importando contratos (TARF, Geared Forward, Accumulator, Forward BBVA)..."
-npm run db:seed 2>&1 | tail -5
-
-# Arrancar servidor
+# Arrancar servidor en puerto fijo 3000
 echo ""
-echo "→ Arrancando servidor..."
-echo "  Abre http://localhost:3000 en tu navegador"
+echo "→ Arrancando Divisia en http://localhost:3000"
 echo ""
-npm run dev
+npm run dev -- -p 3000
