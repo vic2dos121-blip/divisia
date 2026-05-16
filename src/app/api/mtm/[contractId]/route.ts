@@ -1,7 +1,14 @@
 import { NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 
 export async function GET(_: Request, { params }: { params: { contractId: string } }) {
+  const session = await getServerSession(authOptions)
+  if (!session) {
+    return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+  }
+
   const entries = await prisma.mtmEntry.findMany({
     where: { contractId: params.contractId },
     orderBy: { date: 'desc' },
@@ -10,6 +17,11 @@ export async function GET(_: Request, { params }: { params: { contractId: string
 }
 
 export async function POST(req: Request, { params }: { params: { contractId: string } }) {
+  const session = await getServerSession(authOptions)
+  if (!session) {
+    return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+  }
+
   try {
     const body = await req.json()
     const { date, mtmValue, spotRate, source, notes } = body
