@@ -1,0 +1,30 @@
+# === SEGURIDAD — nunca subir ===
+.env
+.env.*
+!.env.example
+
+# Base de datos local (backups con datos reales)
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+prisma/dev.db
+prisma/dev.db-journal
+
+# === Next.js build ===
+.next/
+out/
+
+# === Dependencias ===
+node_modules/
+
+# === Vercel ===
+.vercel
+
+# === Sistema ===
+.DS_Store
+Thumbs.db
+
+# === TypeScript ===
+*.tsbuildinfo
+next-env.d.ts
